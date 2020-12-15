@@ -1,22 +1,15 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const models = require('../models');
+const db = require('../models');
+const tokenServices = require('../services/token')
 
 exports.signin = async(req, res, next) => {
         try {
-                const user= await models.user.findOne({where: {email: req.body.email}});
+                const user= await db.user.findOne({where: {email: req.body.email}});
                 if(user){
                         const passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
                         if(passwordIsValid){
-                                const token = jwt.sign({
-                                        id: user.id,
-                                        name: user.name,
-                                        email: user.email,
-                                        rol: user.rol
-                                },'config.secret', {
-                                        expiresIn: 86400,
-                                }
-                                );
+                                const token = await tokenServices.encode(user);
                                 res.status(200).send({
                                         auth: true,
                                         accessToken: token
@@ -42,15 +35,65 @@ exports.signin = async(req, res, next) => {
                                  
 exports.register = async (req, res, next) => {
         try {
-        
+                const user = await db.user.findOne({where: {email: req.body.email}});
+                if(user){
+                        res.status(409).send({
+                                message: 'Sorry your request has a conflict with our system state, maybe the email is already bad'
+                        })
+                } else{
+                        req.body.password = bcrypt.hashSync(req.body.password, 10);
+                        const user = await db.user.create(req.body);
+                        res.status(200).json(user)
+                }
+                
         } catch (error) {
-                        
+                res.status(500).send({
+                        message: 'Error=>'
+                })
+                next(error);                    
         }
 };
-exports.listar = async (req, res, next) => {
+exports.list = async (req, res, next) => {
         try {
-                            
+                const user = await db.user.findAll();
+                if(user){
+
+                        res.status(200).json(user);
+                }else{
+                        res.status(404).send({
+                                message: 'There is not user in the system'
+                        })
+                }                            
         } catch (error) {
-                        
+                res.status(500).send({
+                        message: 'Error!!'
+                })
+                next(error);
+
         }
-};        
+};
+
+exports.update = async(req, res, next) =>{
+        try {
+                const user = await db.user.findOne({where: {email: req.body.email}});
+                if(user){
+                        const user = await db.user.update({name: req.body.name},
+                                {
+                                where: {
+                                        email: req.body.email
+                                },
+                                // returning: true
+                        });
+                res.status(200).json(user);                
+                }else{
+                        res.status(404).send({
+                                message: 'user not found.'
+                        })
+                }
+        }catch (error) {
+                res.status(500).send({
+                        message: 'Error.'
+                });
+                next(error);
+        }        
+}
