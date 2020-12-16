@@ -10,7 +10,7 @@ const checkToken = async (token) =>{
                 
         }
         const user = await models.user.findOne({where: {
-                id: id,
+                id: localID,
                 estado: 1
         }});
         if(user){
