@@ -33,7 +33,7 @@ exports.add = async (req, res, next) => {
 
 exports.update = async(req, res, next) =>{
         try {
-            const register = await db.Articulo.update({nombre: req.body.nombre, codigo: req.body.codigo},
+                const register = await db.Articulo.update({codigo: req.body.codigo, nombre: req.body.nombre, descripcion: req.body.descripcion, categoriaId: req.body.categoriaId},
                     {
                     where: {
                         id: req.body.id
